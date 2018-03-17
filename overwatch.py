@@ -1,18 +1,47 @@
 #!/usr/bin/env python3.6
 
-import sys
-from PyQt5.QtCore import Qt
+import sys,socket
+
+import PyQt5.QtGui as QtGui
+from PyQt5.QtCore import Qt, QTimer,QThread,pyqtSignal
 from PyQt5.QtWidgets import (QApplication, QWidget, QFrame,QLabel,QPushButton,
     QHBoxLayout,QStyleFactory,QSplitter,QTextEdit,QGridLayout,QLCDNumber,QDial,
     QProgressBar)
 from pyqtgraph import PlotWidget
 
+class DataCollect(QThread):
+    """ Object that broadcast data from DataWatch to Overwatch """
+    def __init__(self,signal):
+        super().__init__()
+        self.ip_port=('127.0.0.1',9995)
+        self.signal=signal
+
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        self.soc = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.soc.connect(self.ip_port)
+        self.soc.sendall("Update".encode())
+        data = self.soc.recv(1024)
+        self.soc.close()
+        self.signal.emit(data.decode())
+
 class OverWatch(QWidget):
+    update_sig = pyqtSignal(str)
     def __init__(self):
         super().__init__()
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.collDat)
+        self.timer.start(5000)
+        self.collectData = DataCollect(self.update_sig)
+        self.update_sig.connect(self.update)
+        self.inrec=[]
+        self.outrec=[]
         self.initUI()
 
     def initUI(self):
+
         hbox = QHBoxLayout()
 
         # tH is the house temperature panel
@@ -31,6 +60,16 @@ class OverWatch(QWidget):
         self.inTemp=QLCDNumber()
         self.outHD=QLCDNumber()
         self.inHD=QLCDNumber()
+        # get the palette
+        palette = self.inTemp.palette()
+        #palette.setColor(palette.Window, QtGui.QColor(255, 0, 0))
+        palette.setColor(palette.Light, QtGui.QColor(0, 0, 0))
+        palette.setColor(palette.Dark, QtGui.QColor(0, 0, 0))
+        self.inTemp.setPalette(palette)
+        self.outTemp.setPalette(palette)
+        self.inHD.setPalette(palette)
+        self.outHD.setPalette(palette)
+
         tHvbox.addWidget(self.outTemp,2,3,1,1)
         tHvbox.addWidget(self.inTemp ,2,1,1,1)
         tHvbox.addWidget(self.outHD,3,3,1,1)
@@ -44,7 +83,7 @@ class OverWatch(QWidget):
         self.pBar = QProgressBar()
         self.pBar.setOrientation(Qt.Vertical)
         tHvbox.addWidget(self.pBar,4,6)
-        self.pBar.setValue(50)
+        self.pBar.setRange(950,1050)
 
         tH.setLayout(tHvbox)
 
@@ -62,11 +101,30 @@ class OverWatch(QWidget):
         split2.addWidget(tH)
         split2.addWidget(split1)
         hbox.addWidget(split2)
-        self.tPlot.plot([2,4,6,8],[1,2,3,4],pen=None,symbol='x')
+        self.tPlot.plot(self.inrec,pen=None,symbol='x')
         self.setLayout(hbox)
         self.setGeometry(300,300,800,600)
-        self.setWindowTitle('Splitter')
+        self.setWindowTitle('OverWatch')
         self.show()
+        self.collDat()
+
+    def collDat(self):
+        """ collect values """
+        self.collectData.start()
+
+    def update(self,dat):
+        """ Update the plot """
+        data=dict([[v.split(':')[0],float(v.split(':')[1])] for v in dat.split(',')])
+        self.inTemp.display(data['InTemp'])
+        self.outTemp.display(data['OutTemp'])
+        self.inHD.display(data['InHD'])
+        self.outHD.display(data['OutHD'])
+        self.pBar.setValue(int(data['OutPress']))
+        self.inrec.append(data['InTemp'])
+        self.outrec.append(data['OutTemp'])
+        self.tPlot.plot(self.inrec,symbol='x')
+        self.tPlot.plot(self.outrec,symbol='o')
+
 
 if __name__=='__main__':
     app = QApplication(sys.argv)
