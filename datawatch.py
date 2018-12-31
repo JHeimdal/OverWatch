@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
 This is the data aquisition & collection program for
-my cleverhome
+my homedata
 """
 import numpy as np
 import socketserver
+
 
 def getValues():
     """ Returns some random data to use as data for viewer """
@@ -27,21 +28,22 @@ class DummyDAQ(socketserver.BaseRequestHandler):
         self.data = self.request.recv(1024).strip()
         print("{} wrote:".format(self.client_address[0]))
         print(self.data)
-        cmd,*arg = self.data.decode().split()
-        if cmd=='GetTemp':
-            if arg[0].lower()=='all':
+        cmd, *arg = self.data.decode().split()
+        if cmd == 'GetTemp':
+            if arg[0].lower() == 'all':
                 self.request.sendall("InTemp:19.2,OutTemp:-2.1".encode())
-            elif arg[0].lower()=='in':
+            elif arg[0].lower() == 'in':
                 self.request.sendall("InTemp:19.1".encode())
-        elif cmd=='GetPress':
-            if arg[0].lower()=='all':
+        elif cmd == 'GetPress':
+            if arg[0].lower() == 'all':
                 self.request.sendall("OutPress:986".encode())
-        elif cmd=='Update':
+        elif cmd == 'Update':
             ret_dat = getValues()
             self.request.sendall(ret_dat.encode())
 
+
 if __name__ == '__main__':
-    ip_port = '127.0.0.1',9995
+    ip_port = '127.0.0.1', 9994
 
     server = socketserver.TCPServer(ip_port, DummyDAQ)
     server.serve_forever()
