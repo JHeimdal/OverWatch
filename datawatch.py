@@ -33,8 +33,8 @@ def getValues():
     dsb1 = "28-000005b45569"
     dsb2 = "28-000005b48527"
     dsb3 = "28-000005b49e58"
-    ret_frm = "InTemp:{},InHD:{},DSB1:{},DSB2:{},DSB3{}"
-    intemp, inhd = dht.read_retry(dht.DHT22, 12)
+    ret_frm = "InTemp:{},InHD:{},DSB1:{},DSB2:{},DSB3:{}"
+    inhd, intemp = dht.read_retry(dht.DHT22, 12)
     return ret_frm.format(intemp,
                           inhd,
                           readDSB(dsb1),
