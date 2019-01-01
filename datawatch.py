@@ -5,22 +5,42 @@ my homedata
 """
 import numpy as np
 import socketserver
+import time
+import Adafruit_DHT as dht
+
+
+def temp_raw(addr):
+    temp_sensor = "/sys/bus/w1/devices/{}/w1_slave".format(addr)
+    f = open(temp_sensor, 'r')
+    lines = f.readlines()
+    f.close()
+    return lines
+
+
+def readDSB(addr):
+    lines = temp_raw(addr)
+    while lines[0].strip()[-3:] != "YES":
+        time.sleep(0.2)
+        lines = temp_raw(addr)
+    temp_out = lines[1].find("t=")
+    if temp_out != -1:
+        temp_str = lines[1].strip()[temp_out+2:]
+        return float(temp_str)/1000.0
 
 
 def getValues():
-    """ Returns some random data to use as data for viewer """
-    inTemp=20.
-    outTemp=-2.
-    inHD=67
-    outHD=30
-    outPress=998
-    ret_frm="InTemp:{},OutTemp:{},InHD:{},OutHD:{},OutPress:{}"
-    np.random.seed()
-    return ret_frm.format(inTemp+3*(np.random.rand()-0.5),\
-                          outTemp+5*(np.random.rand()-0.7),\
-                          inHD+5*(np.random.rand()-0.5),\
-                          outHD+2*(np.random.rand()-0.5),\
-                          outPress+10*(np.random.rand()-0.5))
+    """ Read som values """
+    dsb1 = "28-000005b45569"
+    dsb2 = "28-000005b48527"
+    dsb3 = "28-000005b49e58"
+    ret_frm = "InTemp:{},InHD:{},DSB1:{},DSB2:{},DSB3{}"
+    intemp, inhd = dht.read_retry(dht.DHT22, 12)
+    return ret_frm.format(intemp,
+                          inhd,
+                          readDSB(dsb1),
+                          readDSB(dsb2),
+                          readDSB(dsb3))
+
 
 class DummyDAQ(socketserver.BaseRequestHandler):
     """ This is a dummy data server for programming and testing purpous """
@@ -43,7 +63,7 @@ class DummyDAQ(socketserver.BaseRequestHandler):
 
 
 if __name__ == '__main__':
-    ip_port = '127.0.0.1', 9994
+    ip_port = '192.168.0.104', 9994
 
     server = socketserver.TCPServer(ip_port, DummyDAQ)
     server.serve_forever()

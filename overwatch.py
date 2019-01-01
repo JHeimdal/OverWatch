@@ -17,7 +17,7 @@ class DataCollect(QThread):
     """ Object that broadcast data from DataWatch to Overwatch """
     def __init__(self, signal):
         super().__init__()
-        self.ip_port = ('127.0.0.1', 9994)
+        self.ip_port = ('192.168.0.104', 9994)
         self.signal = signal
 
     def __del__(self):
@@ -49,7 +49,9 @@ class OverWatch(QWidget):
         self.collectData = DataCollect(self.update_sig)
         self.update_sig.connect(self.update)
         self.inrec = []
-        self.outrec = []
+        self.dsb1 = []
+        self.dsb2 = []
+        self.dsb3 = []
         self.initUI()
 
     def initUI(self):
@@ -128,14 +130,18 @@ class OverWatch(QWidget):
         """ Update the plot """
         data = dict([[v.split(':')[0], float(v.split(':')[1])] for v in dat.split(',')])
         self.inTemp.display(data['InTemp'])
-        self.outTemp.display(data['OutTemp'])
+        self.outTemp.display(data['DSB1'])
         self.inHD.display(data['InHD'])
-        self.outHD.display(data['OutHD'])
-        self.pBar.setValue(int(data['OutPress']))
+        self.outHD.display(data['DSB2'])
+        # self.pBar.setValue(int(data['OutPress']))
         self.inrec.append(data['InTemp'])
-        self.outrec.append(data['OutTemp'])
+        self.dsb1.append(data['DSB1'])
+        self.dsb2.append(data['DSB2'])
+        self.dsb3.append(data['DSB3'])
         self.tPlot.plot(self.inrec, symbol='x')
-        self.tPlot.plot(self.outrec, symbol='o')
+        self.tPlot.plot(self.dsb1, symbol='o')
+        self.tPlot.plot(self.dsb2, symbol='o')
+        self.tPlot.plot(self.dsb3, symbol='o')
 
 
 if __name__ == '__main__':
