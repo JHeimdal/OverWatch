@@ -3,9 +3,10 @@
 This is the data aquisition & collection program for
 my homedata
 """
-import numpy as np
+# import numpy as np
 import socketserver
 import time
+import piplates.DAQCplate as DAQC
 import Adafruit_DHT as dht
 
 
@@ -15,6 +16,12 @@ def temp_raw(addr):
     lines = f.readlines()
     f.close()
     return lines
+
+
+def readPress():
+    v = DAQC.getADC(0, 0)
+    vs = DAQC.getADC(0, 8)
+    return (v/vs+0.095)/0.009
 
 
 def readDSB(addr):
@@ -33,13 +40,14 @@ def getValues():
     dsb1 = "28-000005b45569"
     dsb2 = "28-000005b48527"
     dsb3 = "28-000005b49e58"
-    ret_frm = "InTemp:{},InHD:{},DSB1:{},DSB2:{},DSB3:{}"
-    inhd, intemp = dht.read_retry(dht.DHT22, 12)
+    ret_frm = "InTemp:{},InHD:{},DSB1:{},DSB2:{},DSB3:{},Press:{}"
+    inhd, intemp = dht.read_retry(dht.DHT22, 16)
     return ret_frm.format(intemp,
                           inhd,
                           readDSB(dsb1),
                           readDSB(dsb2),
-                          readDSB(dsb3))
+                          readDSB(dsb3),
+                          readPress())
 
 
 class DummyDAQ(socketserver.BaseRequestHandler):

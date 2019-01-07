@@ -45,7 +45,7 @@ class OverWatch(QWidget):
         super().__init__()
         self.timer = QTimer()
         self.timer.timeout.connect(self.collDat)
-        self.timer.start(5000)
+        self.timer.start(2000)
         self.collectData = DataCollect(self.update_sig)
         self.update_sig.connect(self.update)
         self.inrec = []
@@ -133,7 +133,7 @@ class OverWatch(QWidget):
         self.outTemp.display(data['DSB1'])
         self.inHD.display(data['InHD'])
         self.outHD.display(data['DSB2'])
-        # self.pBar.setValue(int(data['OutPress']))
+        self.pBar.setValue(int(data['Press'])*10)
         self.inrec.append(data['InTemp'])
         self.dsb1.append(data['DSB1'])
         self.dsb2.append(data['DSB2'])
